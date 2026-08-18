@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>七夕 · 稻米的家人们</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0d0d0d;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        #landing {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; transition: opacity 0.4s ease; background: #0d0d0d;
+        }
+        #landing.hidden { opacity: 0; pointer-events: none; }
+        .landing-content {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 20px; gap: 16px;
+        }
+        .rose-line {
+            display: flex; align-items: center; justify-content: center; gap: 14px;
+            font-size: 1.1rem; color: #bbbbbb; letter-spacing: 0.08em;
+        }
+        .blessing-text {
+            color: #dddddd; font-size: 1.3rem; letter-spacing: 0.1em; line-height: 1.6; font-weight: 300;
+        }
+        .enter-btn {
+            margin-top: 20px; background: transparent; border: 1px solid #888888;
+            color: #cccccc; padding: 10px 30px; font-size: 0.95rem; letter-spacing: 0.2em;
+            cursor: pointer; transition: all 0.25s ease; font-family: 'Georgia', serif; border-radius: 2px;
+        }
+        .enter-btn:hover { border-color: #dddddd; color: #ffffff; background: rgba(255,255,255,0.04); }
+        .music-switch {
+            position: fixed; top: 18px; right: 20px; z-index: 30;
+            background: transparent; border: 1px solid #666666; color: #aaaaaa;
+            padding: 7px 14px; font-size: 0.75rem; letter-spacing: 0.08em;
+            cursor: pointer; transition: all 0.25s ease; font-family: 'Georgia', serif; border-radius: 2px;
+        }
+        .music-switch:hover { border-color: #bbbbbb; color: #ffffff; }
+        #champagnePage {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 20; background: #0d0d0d;
+        }
+        #champagnePage.active { display: flex; }
+        .champagne-container {
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px;
+        }
+        .champagne-title {
+            color: #cccccc; font-size: 1.3rem; letter-spacing: 0.4em; text-align: center; margin-bottom: 8px; font-weight: 300;
+        }
+        #champagneCanvas {
+            display: block; border-radius: 4px; box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            background: #111111; max-width: 100%; height: auto;
+        }
+        .champagne-hint { color: #888888; font-size: 0.7rem; letter-spacing: 0.2em; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="landing">
+        <div class="landing-content">
+            <div class="rose-line"><span>🌹</span><span>七夕将至，稻米的家人们</span><span>🌹</span></div>
+            <div class="blessing-text">比起香槟塔，我更想要你们幸福</div>
+            <button class="enter-btn" id="enterBtn">进入香槟塔</button>
+        </div>
+        <button class="music-switch" id="musicSwitchBtn">换音乐</button>
+    </div>
+
+    <div id="champagnePage">
+        <div class="champagne-container">
+            <div class="champagne-title">✦ 香槟塔 ✦</div>
+            <canvas id="champagneCanvas" width="900" height="800"></canvas>
+            <div class="champagne-hint">@胥紫敬上</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const musicSwitchBtn = document.getElementById('musicSwitchBtn');
+            const audio = new Audio();
+            const AUDIO_SRC = 'my_jealousy.mp3';
+            audio.src = AUDIO_SRC;
+            audio.loop = true;
+            audio.volume = 0.6;
+            setTimeout(() => { audio.play().catch(err => console.log('自动播放被阻止，请点击页面任意位置后手动播放')); }, 2000);
+            musicSwitchBtn.addEventListener('click', () => {
+                if (audio.paused) {
+                    audio.play().catch(err => console.log('播放失败'));
+                    musicSwitchBtn.textContent = '暂停音乐';
+                } else {
+                    audio.pause();
+                    musicSwitchBtn.textContent = '播放音乐';
+                }
+            });
+            document.addEventListener('click', function firstClickPlay() {
+                if (audio.paused) audio.play().catch(err => console.log('播放失败'));
+                document.removeEventListener('click', firstClickPlay);
+            }, { once: true });
+        })();
+
+        document.getElementById('enterBtn').addEventListener('click', () => {
+            document.getElementById('landing').classList.add('hidden');
+            const champagnePage = document.getElementById('champagnePage');
+            champagnePage.classList.add('active');
+            setTimeout(() => { initChampagne(); }, 100);
+        });
+
+        function initChampagne() {
+            if (window._champagneInit) return;
+            window._champagneInit = true;
+
+            const canvas = document.getElementById('champagneCanvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            const COLORS = {
+                champagne: [
+                    '#fff8e7', '#f5e0b5', '#f0d5a0', '#e8c97a',
+                    '#e0b85c', '#d4a853', '#c49a3c', '#f7e7c8',
+                    '#ffe9c4', '#e8d5a0', '#dcc080', '#f2dcb0',
+                    '#f9e8c8', '#ecd4a8', '#d9b878', '#e6c894',
+                    '#fdeec8', '#ebd3a0', '#f3dfbc', '#e0c48c'
+                ],
+                glassParticle: [
+                    'rgba(255, 235, 200, 0.9)', 'rgba(255, 220, 170, 0.85)',
+                    'rgba(245, 210, 155, 0.8)', 'rgba(235, 200, 140, 0.75)',
+                    'rgba(255, 245, 220, 0.95)', 'rgba(240, 215, 165, 0.85)',
+                    'rgba(250, 225, 180, 0.88)', 'rgba(225, 190, 130, 0.72)'
+                ],
+                bottleParticle: [
+                    'rgba(42, 52, 22, 0.95)',
+                    'rgba(35, 45, 18, 0.92)',
+                    'rgba(48, 58, 26, 0.9)',
+                    'rgba(30, 40, 15, 0.95)',
+                    'rgba(38, 48, 20, 0.93)',
+                    'rgba(32, 42, 16, 0.94)'
+                ],
+                bottleFoilParticle: [
+                    'rgba(255, 220, 140, 0.95)', 'rgba(240, 200, 100, 0.9)',
+                    'rgba(230, 190, 90, 0.85)', 'rgba(250, 210, 120, 0.92)',
+                    'rgba(245, 205, 110, 0.88)', 'rgba(255, 230, 150, 0.94)'
+                ]
+            };
+
+            const CUP_LAYERS = 5;
+            const CUP_MOUTH_HALF = 50;
+            const CUP_DEPTH = 42;
+            const CUP_STEM_LENGTH = 36;
+            const CUP_BASE_HALF = 28;
+            const CUP_CAPACITY = 400;
+            const LAYER_SPACING_Y = 98;
+            const LAYER_SPACING_X = 94;
+            const TOP_CUP_Y = 210;
+            const GROUND_Y = 720;
+
+            const PARTICLE_RADIUS = 0.7;
+            const PARTICLE_RADIUS_FREE = 0.9;
+            const OUTLINE_PARTICLE_RADIUS = 0.6;
+            const GRAVITY = 0.45;
+            const MAX_TOTAL_PARTICLES = 25000;   // 降低上限，保证流畅
+            const SPAWN_RATE = 1.0;
+            const SPAWN_COUNT = 22;              // 每帧生成22个，更平稳
+
+            const cups = [];
+            let freeParticles = [];
+            let staticParticles = [];
+            let cupParticleCounter = 0;
+            let frameCount = 0;
+            let bottleMouthPos = { x: 0, y: 0 };
+
+            class Particle {
+                constructor(x, y, vx = 0, vy = 0, radius = PARTICLE_RADIUS_FREE, color = null) {
+                    this.x = x;
+                    this.y = y;
+                    this.vx = vx;
+                    this.vy = vy;
+                    this.radius = radius;
+                    this.color = color || COLORS.champagne[Math.floor(Math.random() * COLORS.champagne.length)];
+                    this.alpha = 0.85 + Math.random() * 0.15;
+                    this.cupIndex = -1;
+                    this.sourceCupIndex = -1;
+                    this.targetCupIndex = -1;
+                    this.targetX = x;
+                    this.targetY = y;
+                    this.settleSpeed = 0.08 + Math.random() * 0.03;
+                    this.id = cupParticleCounter++;
+                    this.sparkle = Math.random() > 0.6;
+                    this.isStatic = false;
+                    this.staticType = null;
+                    this.age = 0;
+                }
+                update() {
+                    if (this.isStatic) {
+                        return;
+                    }
+                    this.age++;
+                    if (this.cupIndex >= 0) {
+                        const dx = this.targetX - this.x;
+                        const dy = this.targetY - this.y;
+                        this.x += dx * this.settleSpeed;
+                        this.y += dy * this.settleSpeed;
+                        this.x += (Math.random() - 0.5) * 0.1;
+                        this.y += (Math.random() - 0.5) * 0.05;
+                        const cup = cups[this.cupIndex];
+                        if (cup) {
+                            const depth = Math.max(0, Math.min(CUP_DEPTH, cup.y + CUP_DEPTH - this.y));
+                            const halfWidth = CUP_MOUTH_HALF - (depth / CUP_DEPTH) * (CUP_MOUTH_HALF - 7) - 1.5;
+                            this.x = Math.max(cup.x - halfWidth, Math.min(cup.x + halfWidth, this.x));
+                            this.y = Math.max(cup.y + 2, Math.min(cup.y + CUP_DEPTH - 1, this.y));
+                        }
+                    } else {
+                        this.vy += GRAVITY;
+                        this.x += this.vx;
+                        this.y += this.vy;
+                        this.vx *= 0.999;
+                        const maxSpeed = 14.0;
+                        const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                        if (speed > maxSpeed) {
+                            this.vx = (this.vx / speed) * maxSpeed;
+                            this.vy = (this.vy / speed) * maxSpeed;
+                        }
+                    }
+                }
+            }
+
+            function initCups() {
+                for (let layer = 0; layer < CUP_LAYERS; layer++) {
+                    const count = layer + 1;
+                    const totalWidth = (count - 1) * LAYER_SPACING_X;
+                    const startX = W / 2 - totalWidth / 2;
+                    const y = TOP_CUP_Y + layer * LAYER_SPACING_Y;
+                    for (let j = 0; j < count; j++) {
+                        const x = startX + j * LAYER_SPACING_X;
+                        let capacity = CUP_CAPACITY;
+                        if (layer === CUP_LAYERS - 1 && (j === 0 || j === count - 1)) capacity = Math.floor(CUP_CAPACITY * 0.8);
+                        cups.push({ layer, index: j, x, y, capacity, particles: [], children: [] });
+                    }
+                }
+                for (let i = 0; i < cups.length; i++) {
+                    const cup = cups[i];
+                    if (cup.layer < CUP_LAYERS - 1) {
+                        const nextLayer = cup.layer + 1;
+                        cup.children.push(cups.findIndex(c => c.layer === nextLayer && c.index === cup.index));
+                        cup.children.push(cups.findIndex(c => c.layer === nextLayer && c.index === cup.index + 1));
+                    }
+                }
+            }
+
+            function generateGlassOutlineParticles(cup) {
+                const { x, y } = cup;
+                const mouthHalf = CUP_MOUTH_HALF, depth = CUP_DEPTH, stemLen = CUP_STEM_LENGTH, baseHalf = CUP_BASE_HALF, stemW = 3;
+                const baseY = y + depth + stemLen;
+
+                for (let i = 0; i < 100; i++) {
+                    const angle = (i / 100) * Math.PI * 2;
+                    const px = x + Math.cos(angle) * mouthHalf;
+                    const py = y + Math.sin(angle) * 4;
+                    const p = new Particle(px, py, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.9, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    p.isStatic = true; p.staticType = 'glass'; staticParticles.push(p);
+                }
+                for (let i = 1; i <= 60; i++) {
+                    const t = i / 60;
+                    const depthT = t * depth;
+                    const halfW = mouthHalf - (depthT / depth) * (mouthHalf - 9);
+                    const lx = x - halfW, ly = y + depthT + t * 5;
+                    const lp = new Particle(lx, ly, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.8, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    lp.isStatic = true; lp.staticType = 'glass'; staticParticles.push(lp);
+                    const rx = x + halfW, ry = y + depthT + t * 5;
+                    const rp = new Particle(rx, ry, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.8, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    rp.isStatic = true; rp.staticType = 'glass'; staticParticles.push(rp);
+                }
+                for (let i = 0; i < 20; i++) {
+                    const t = i / 19;
+                    const bx = x - 12 + t * 24;
+                    const by = y + depth + Math.sin(t * Math.PI) * 8;
+                    const bp = new Particle(bx, by, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.8, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    bp.isStatic = true; bp.staticType = 'glass'; staticParticles.push(bp);
+                }
+                for (let i = 0; i < 20; i++) {
+                    const t = i / 19;
+                    const stemY = y + depth + 2 + t * stemLen;
+                    const slx = x - stemW / 2;
+                    const slp = new Particle(slx, stemY, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.7, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    slp.isStatic = true; slp.staticType = 'glass'; staticParticles.push(slp);
+                    const srx = x + stemW / 2;
+                    const srp = new Particle(srx, stemY, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.7, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    srp.isStatic = true; srp.staticType = 'glass'; staticParticles.push(srp);
+                }
+                for (let i = 0; i < 40; i++) {
+                    const angle = (i / 40) * Math.PI * 2;
+                    const px = x + Math.cos(angle) * baseHalf;
+                    const py = baseY + 6 + Math.sin(angle) * 7;
+                    const bp = new Particle(px, py, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.8, COLORS.glassParticle[Math.floor(Math.random() * COLORS.glassParticle.length)]);
+                    bp.isStatic = true; bp.staticType = 'glass'; staticParticles.push(bp);
+                }
+            }
+
+            function generateBottleOutlineParticles() {
+                const topCupX = W / 2, topCupY = TOP_CUP_Y;
+                const mouthWorld = { x: topCupX, y: topCupY - 100 };
+                const pourAngle = 0.12;
+                const bodyLength = 170, bodyMaxRadius = 26, neckLength = 70, neckRadius = 6;
+                const shoulderLength = 35;
+                const mouthLocalX = bodyLength / 2 + neckLength + 3;
+                const cosA = Math.cos(-pourAngle), sinA = Math.sin(-pourAngle);
+                const bottleCenterX = mouthWorld.x - mouthLocalX * cosA;
+                const bottleCenterY = mouthWorld.y - mouthLocalX * sinA;
+                const bottleCenter = { x: bottleCenterX, y: bottleCenterY };
+
+                function transformPoint(localX, localY) {
+                    return { x: bottleCenter.x + localX * cosA - localY * sinA, y: bottleCenter.y + localX * sinA + localY * cosA };
+                }
+
+                function getProfileY(localX, isUpper) {
+                    const halfLen = bodyLength / 2;
+                    const bottomCurve = 8;
+                    const shoulderStart = halfLen - shoulderLength;
+                    const neckStart = halfLen;
+                    const neckEnd = halfLen + neckLength;
+
+                    if (localX < -halfLen + bottomCurve) {
+                        const t = (localX + halfLen) / bottomCurve;
+                        const radius = bodyMaxRadius * (0.65 + 0.35 * Math.sin(t * Math.PI / 2));
+                        return isUpper ? -radius : radius;
+                    } else if (localX < shoulderStart) {
+                        const normalized = (localX + halfLen) / (bodyLength - bottomCurve);
+                        const factor = 0.9 + 0.1 * Math.cos((normalized - 0.5) * Math.PI * 0.4);
+                        const radius = bodyMaxRadius * factor;
+                        return isUpper ? -radius : radius;
+                    } else if (localX < neckStart) {
+                        const t = (localX - shoulderStart) / shoulderLength;
+                        const smoothT = (1 - Math.cos(t * Math.PI)) / 2;
+                        const radius = bodyMaxRadius - (bodyMaxRadius - neckRadius) * smoothT;
+                        return isUpper ? -radius : radius;
+                    } else if (localX < neckEnd) {
+                        return isUpper ? -neckRadius : neckRadius;
+                    } else {
+                        const foilRadius = neckRadius + 1.5;
+                        return isUpper ? -foilRadius : foilRadius;
+                    }
+                }
+
+                const totalPoints = 160;
+                const startLocalX = -bodyLength / 2 - 4;
+                const endLocalX = bodyLength / 2 + neckLength + 8;
+                for (let i = 0; i <= totalPoints; i++) {
+                    const t = i / totalPoints;
+                    const localX = startLocalX + t * (endLocalX - startLocalX);
+                    const yUpper = getProfileY(localX, true);
+                    let pt = transformPoint(localX, yUpper);
+                    let cp = new Particle(pt.x, pt.y, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.85, COLORS.bottleParticle[Math.floor(Math.random() * COLORS.bottleParticle.length)]);
+                    cp.isStatic = true; cp.staticType = 'bottle'; staticParticles.push(cp);
+                    const yLower = getProfileY(localX, false);
+                    pt = transformPoint(localX, yLower);
+                    cp = new Particle(pt.x, pt.y, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.85, COLORS.bottleParticle[Math.floor(Math.random() * COLORS.bottleParticle.length)]);
+                    cp.isStatic = true; cp.staticType = 'bottle'; staticParticles.push(cp);
+                }
+
+                const bottomRadius = bodyMaxRadius * 0.6;
+                for (let i = 0; i <= 25; i++) {
+                    const angle = -Math.PI / 2 + (i / 25) * Math.PI;
+                    const localX = -bodyLength / 2 + Math.cos(angle) * 4;
+                    const localY = Math.sin(angle) * bottomRadius;
+                    const pt = transformPoint(localX, localY);
+                    const cp = new Particle(pt.x, pt.y, 0, 0, OUTLINE_PARTICLE_RADIUS * 0.9, COLORS.bottleParticle[Math.floor(Math.random() * COLORS.bottleParticle.length)]);
+                    cp.isStatic = true; cp.staticType = 'bottle'; staticParticles.push(cp);
+                }
+
+                const foilLocalX = bodyLength / 2 + neckLength + 4;
+                for (let i = 0; i < 40; i++) {
+                    const angle = (i / 40) * Math.PI * 2;
+                    const localY = Math.cos(angle) * (neckRadius + 2.5);
+                    const pt = transformPoint(foilLocalX, localY);
+                    const cp = new Particle(pt.x, pt.y, 0, 0, OUTLINE_PARTICLE_RADIUS * 1.0, COLORS.bottleFoilParticle[Math.floor(Math.random() * COLORS.bottleFoilParticle.length)]);
+                    cp.isStatic = true; cp.staticType = 'bottle'; cp.alpha = 0.95; staticParticles.push(cp);
+                }
+                for (let i = 0; i < 15; i++) {
+                    const localX = foilLocalX - 3 + Math.random() * 8;
+                    const localY = (Math.random() > 0.5 ? 1 : -1) * (neckRadius + 2);
+                    const pt = transformPoint(localX, localY);
+                    const cp = new Particle(pt.x, pt.y, 0, 0, OUTLINE_PARTICLE_RADIUS * 1.1, COLORS.bottleFoilParticle[Math.floor(Math.random() * COLORS.bottleFoilParticle.length)]);
+                    cp.isStatic = true; cp.staticType = 'bottle'; staticParticles.push(cp);
+                }
+
+                const fillStep = 0.7;
+                const fillRadius = 1.7;
+                for (let lx = startLocalX; lx <= endLocalX; lx += fillStep) {
+                    const yUpper = getProfileY(lx, true);
+                    const yLower = getProfileY(lx, false);
+                    const innerMargin = 0.8;
+                    const yTop = yUpper + innerMargin;
+                    const yBottom = yLower - innerMargin;
+                    for (let ly = yTop; ly <= yBottom; ly += fillStep) {
+                        const pt = transformPoint(lx, ly);
+                        const fillColor = COLORS.bottleParticle[Math.floor(Math.random() * COLORS.bottleParticle.length)];
+                        const fillParticle = new Particle(pt.x, pt.y, 0, 0, fillRadius, fillColor);
+                        fillParticle.isStatic = true;
+                        fillParticle.staticType = 'bottle';
+                        fillParticle.alpha = 0.95;
+                        staticParticles.push(fillParticle);
+                    }
+                }
+
+                return mouthWorld;
+            }
+
+            function spawnParticleFromBottle() {
+                if (!bottleMouthPos) return;
+                const mx = bottleMouthPos.x, my = bottleMouthPos.y;
+                for (let s = 0; s < SPAWN_COUNT; s++) {
+                    const offsetX = (Math.random() - 0.5) * 10;
+                    const offsetY = (Math.random() - 0.5) * 3;
+                    const vx = (Math.random() - 0.5) * 2.0;
+                    const vy = 4.0 + Math.random() * 6.0;
+                    const p = new Particle(mx + offsetX, my + offsetY, vx, vy, PARTICLE_RADIUS_FREE);
+                    p.alpha = 0.9;
+                    p.color = COLORS.champagne[Math.floor(Math.random() * COLORS.champagne.length)];
+                    p.sourceCupIndex = -1;
+                    freeParticles.push(p);
+                }
+            }
+
+            function tryEnterCup(particle) {
+                if (particle.vy <= 0) return false;
+                let allowedCups = [];
+                if (particle.sourceCupIndex === -1) {
+                    for (let i = 0; i < cups.length; i++) if (cups[i].layer === 0) allowedCups.push(i);
+                } else {
+                    const parentCup = cups[particle.sourceCupIndex];
+                    if (parentCup && parentCup.children.length > 0) allowedCups = parentCup.children;
+                    else return false;
+                }
+
+                for (const ci of allowedCups) {
+                    const cup = cups[ci];
+                    const mouthTop = cup.y, mouthBottom = cup.y + 10;
+                    const mouthLeft = cup.x - CUP_MOUTH_HALF - 4, mouthRight = cup.x + CUP_MOUTH_HALF + 4;
+                    if (particle.y >= mouthTop && particle.y <= mouthBottom && particle.x >= mouthLeft && particle.x <= mouthRight) {
+                        const cupParticleCount = cup.particles.length;
+                        if (cupParticleCount < cup.capacity) {
+                            particle.cupIndex = ci;
+                            particle.targetCupIndex = -1;
+                            const depth = cupParticleCount / cup.capacity;
+                            const targetDepthY = cup.y + CUP_DEPTH - 2 - depth * (CUP_DEPTH - 4);
+                            const depthPx = CUP_DEPTH - (targetDepthY - cup.y);
+                            const halfW = CUP_MOUTH_HALF - (depthPx / CUP_DEPTH) * (CUP_MOUTH_HALF - 7) - 2;
+                            particle.targetX = cup.x + (Math.random() - 0.5) * halfW * 1.8;
+                            particle.targetY = targetDepthY + (Math.random() - 0.5) * 1.0;
+                            particle.settleSpeed = 0.08 + Math.random() * 0.03;
+                            particle.radius = PARTICLE_RADIUS;
+                            particle.color = COLORS.champagne[Math.floor(Math.random() * COLORS.champagne.length)];
+                            cup.particles.push(particle);
+                            return true;
+                        } else {
+                            overflowCup(cup, particle);
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            function overflowCup(cup, incomingParticle) {
+                const sourceIdx = cups.indexOf(cup);
+                const leftChild = cup.children.length > 0 ? cup.children[0] : -1;
+                const rightChild = cup.children.length > 1 ? cup.children[1] : leftChild;
+
+                const leftX = cup.x - CUP_MOUTH_HALF - 2;
+                const leftY = cup.y + 1;
+                const lp = new Particle(leftX, leftY, 0, 0, PARTICLE_RADIUS_FREE);
+                lp.sourceCupIndex = sourceIdx; lp.targetCupIndex = leftChild;
+                lp.color = COLORS.champagne[Math.floor(Math.random() * COLORS.champagne.length)]; lp.alpha = 0.9;
+                if (leftChild !== -1) {
+                    const target = cups[leftChild];
+                    const dx = target.x - leftX, dy = target.y - leftY;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const speed = 4.0 + Math.random() * 2.0;
+                    lp.vx = (dx / dist) * speed * 0.6;
+                    lp.vy = (dy / dist) * speed;
+                } else {
+                    lp.vx = (Math.random() - 0.5) * 0.2;
+                    lp.vy = 4.5 + Math.random() * 2.5;
+                }
+                freeParticles.push(lp);
+
+                const rightX = cup.x + CUP_MOUTH_HALF + 2;
+                const rightY = cup.y + 1;
+                const rp = new Particle(rightX, rightY, 0, 0, PARTICLE_RADIUS_FREE);
+                rp.sourceCupIndex = sourceIdx; rp.targetCupIndex = rightChild;
+                rp.color = COLORS.champagne[Math.floor(Math.random() * COLORS.champagne.length)]; rp.alpha = 0.9;
+                if (rightChild !== -1) {
+                    const target = cups[rightChild];
+                    const dx = target.x - rightX, dy = target.y - rightY;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const speed = 4.0 + Math.random() * 2.0;
+                    rp.vx = (dx / dist) * speed * 0.6;
+                    rp.vy = (dy / dist) * speed;
+                } else {
+                    rp.vx = (Math.random() - 0.5) * 0.2;
+                    rp.vy = 4.5 + Math.random() * 2.5;
+                }
+                freeParticles.push(rp);
+            }
+
+            function updateParticles() {
+                const totalParticles = freeParticles.length + cups.reduce((sum, c) => sum + c.particles.length, 0);
+                if (Math.random() < SPAWN_RATE) spawnParticleFromBottle();
+                if (totalParticles > MAX_TOTAL_PARTICLES) {
+                    const excess = totalParticles - MAX_TOTAL_PARTICLES;
+                    const removeCount = Math.min(freeParticles.length, excess);
+                    if (removeCount > 0) freeParticles.splice(0, removeCount);
+                }
+
+                const newFreeParticles = [];
+                for (const p of freeParticles) {
+                    p.update();
+                    const entered = tryEnterCup(p);
+                    if (entered) continue;
+                    if (p.y >= GROUND_Y) continue;
+                    if (p.y < H + 100 && p.x > -100 && p.x < W + 100) newFreeParticles.push(p);
+                }
+                freeParticles = newFreeParticles;
+
+                for (const cup of cups) {
+                    for (let i = cup.particles.length - 1; i >= 0; i--) {
+                        const p = cup.particles[i];
+                        p.update();
+                        if (p.cupIndex !== cups.indexOf(cup)) cup.particles.splice(i, 1);
+                    }
+                }
+            }
+
+            function drawParticle(p) {
+                const alpha = p.alpha, r = p.radius;
+                const glowSize = p.isStatic ? r * 1.8 : r * 2.5;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+                if (p.isStatic) {
+                    ctx.fillStyle = p.staticType === 'glass' ? `rgba(255,220,160,${alpha * 0.25})` : `rgba(210,240,180,${alpha * 0.2})`;
+                } else {
+                    ctx.fillStyle = `rgba(232,201,122,${alpha * 0.35})`;
+                }
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = alpha;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                if (r > 0.6 && p.sparkle && !p.isStatic) {
+                    ctx.beginPath();
+                    ctx.arc(p.x - r * 0.2, p.y - r * 0.25, r * 0.3, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255,255,255,${alpha * 0.6})`;
+                    ctx.fill();
+                }
+            }
+
+            function renderChampagne() {
+                frameCount++;
+                ctx.clearRect(0, 0, W, H);
+
+                const bgGrad = ctx.createRadialGradient(W / 2, 180, 0, W / 2, 180, 400);
+                bgGrad.addColorStop(0, 'rgba(80,50,20,0.08)');
+                bgGrad.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, W, H);
+
+                const allParticles = [];
+                for (const p of staticParticles) allParticles.push(p);
+                for (const cup of cups) for (const p of cup.particles) allParticles.push(p);
+                for (const p of freeParticles) allParticles.push(p);
+
+                allParticles.sort((a, b) => a.y - b.y);
+                for (const p of allParticles) drawParticle(p);
+
+                updateParticles();
+                requestAnimationFrame(renderChampagne);
+            }
+
+            initCups();
+            for (const cup of cups) generateGlassOutlineParticles(cup);
+            bottleMouthPos = generateBottleOutlineParticles();
+            requestAnimationFrame(renderChampagne);
+        }
+    </script>
+</body>
+</html>
